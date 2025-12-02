@@ -50,12 +50,29 @@ for i in dates:
 data["Customer_xp"] = days
 data["Customer_xp"] = pd.to_numeric(data["Customer_xp"],errors="coerce")
 
-print('marital ',data["Marital_Status"].value_counts(),"\n")
-# histo_ms = data["Marital_Status"].value_counts()
-# histo_ms.plot(kind='bar')
-print('education ',data["Education"].value_counts(),"\n")
-# histo_ms = data["Education"].value_counts()
-# histo_ms.plot(kind='bar', color='red')
+# Marital Status Distribution
+print('marital ', data["Marital_Status"].value_counts(), "\n")
+histo_ms = data["Marital_Status"].value_counts()
+
+plt.figure()  # Create new figure for marital status
+histo_ms.plot(kind='bar')
+plt.title('Marital Status Distribution')
+plt.xlabel('Marital Status')
+plt.ylabel('Count')
+plt.tight_layout()
+plt.show()
+
+# Education Distribution
+print('education ', data["Education"].value_counts(), "\n")
+histo_ms2 = data["Education"].value_counts()
+
+plt.figure()  # Create new figure for education
+histo_ms2.plot(kind='bar', color='red')
+plt.title('Education Distribution')
+plt.xlabel('Education Level')
+plt.ylabel('Count')
+plt.tight_layout()
+plt.show()
 
 #-------------------------------------------------------
 data["Year_Birth"] = pd.to_datetime(data["Year_Birth"], format='mixed')
@@ -231,42 +248,7 @@ for cluster in sorted(dataf_clean["Clusters"].unique()):
     print(f"% Parents: {(cluster_data['Is_Parent'].sum() / len(cluster_data) * 100):.1f}%")
     print(f"Average Family Size: {cluster_data['Family_Size'].mean():.2f}")
 
-# Create comparison visualizations
-fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-fig.suptitle('Cluster Comparison Across Key Metrics', fontsize=16, fontweight='bold')
 
-pal = ["#682F2F", "#B9C0C9", "#9F8A78", "#F3AB60"]
-
-# Income by Cluster
-sns.boxplot(data=dataf_clean, x="Clusters", y="Income", palette=pal, ax=axes[0, 0])
-axes[0, 0].set_title('Income Distribution by Cluster')
-
-# Age by Cluster
-sns.boxplot(data=dataf_clean, x="Clusters", y="Age", palette=pal, ax=axes[0, 1])
-axes[0, 1].set_title('Age Distribution by Cluster')
-
-# Spent by Cluster
-sns.boxplot(data=dataf_clean, x="Clusters", y="Spent", palette=pal, ax=axes[0, 2])
-axes[0, 2].set_title('Total Spending by Cluster')
-
-# Recency by Cluster
-sns.boxplot(data=dataf_clean, x="Clusters", y="Recency", palette=pal, ax=axes[1, 0])
-axes[1, 0].set_title('Recency by Cluster')
-
-# Family Size by Cluster
-sns.boxplot(data=dataf_clean, x="Clusters", y="Family_Size", palette=pal, ax=axes[1, 1])
-axes[1, 1].set_title('Family Size by Cluster')
-
-# Is_Parent distribution
-cluster_parent = dataf_clean.groupby(['Clusters', 'Is_Parent']).size().unstack(fill_value=0)
-cluster_parent.plot(kind='bar', stacked=True, ax=axes[1, 2], color=['#B9C0C9', '#682F2F'])
-axes[1, 2].set_title('Parent Status by Cluster')
-axes[1, 2].set_xlabel('Cluster')
-axes[1, 2].set_ylabel('Count')
-axes[1, 2].legend(['Not Parent', 'Parent'])
-
-plt.tight_layout()
-plt.show()
 
 # Product preferences by cluster
 print("\n3. Product Category Spending by Cluster:")
