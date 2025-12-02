@@ -149,7 +149,7 @@ plt.show()
 ds = dataf_clean.copy()
 
 # Only drop columns that actually exist
-cols_del = ['AcceptedCmp3', 'AcceptedCmp5.1', 'AcceptedCmp5', 'AcceptedCmp4']
+cols_del = ['AcceptedCmp3', 'AcceptedCmp5.1', 'AcceptedCmp5', 'AcceptedCmp4','Complain','Response']
 cols_to_drop = [col for col in cols_del if col in ds.columns]
 if cols_to_drop:
     ds = ds.drop(cols_to_drop, axis=1)
@@ -162,10 +162,10 @@ scaler = StandardScaler()
 # The standard score of a sample x is calculated as:
 # z = (x - u) / s
 # where u is the mean of the training samples
-# s = std.fit(ds)
 
+scaler.fit(ds)
 scaled_ds = pd.DataFrame(scaler.fit_transform(ds), columns=ds.columns)
-
+#-------------------------------------------------------
 # PCA
 pca = PCA(n_components=3)
 pca.fit(scaled_ds)
@@ -182,3 +182,109 @@ ax = fig.add_subplot(111, projection="3d")
 ax.scatter(x, y, z, c="maroon", marker="o")
 ax.set_title("A 3D Projection Of Data In The Reduced Dimension")
 plt.show()
+
+#-------------------------------------------------------
+# Agglomerative Clustering
+AC = AgglomerativeClustering(n_clusters=4)
+yhat_AC = AC.fit_predict(PCA_ds)
+PCA_ds["Clusters"] = yhat_AC
+dataf_clean["Clusters"] = yhat_AC
+
+# Define colormap with proper hex codes
+cmap = colors.ListedColormap(["#682F2F", "#9E726F", "#D6B2B1", "#B9C0C9", "#9F8A78", "#F3AB60"])
+
+# 3D Plot of the clusters
+fig = plt.figure(figsize=(10, 8))
+ax = plt.subplot(111, projection='3d', label="bla")
+ax.scatter(x, y, z, s=40, c=PCA_ds["Clusters"], marker='o', cmap=cmap)
+ax.set_title("The Plot Of The Clusters")
+plt.show()
+
+# Cluster distribution countplot
+pal = ["#682F2F", "#B9C0C9", "#9F8A78", "#F3AB60"]
+pl = sns.countplot(x=dataf_clean["Clusters"], palette=pal)
+pl.set_title("Distribution Of The Clusters")
+plt.show()
+
+
+
+# Detailed Cluster Analysis
+print("="*60)
+print("CLUSTER ANALYSIS SUMMARY")
+print("="*60)
+
+# Count of customers in each cluster
+print("\n1. Cluster Distribution:")
+print(dataf_clean["Clusters"].value_counts().sort_index())
+
+# Statistical summary for each cluster
+print("\n2. Cluster Characteristics:")
+for cluster in sorted(dataf_clean["Clusters"].unique()):
+    print(f"\n--- Cluster {cluster} ---")
+    cluster_data = dataf_clean[dataf_clean["Clusters"] == cluster]
+    
+    print(f"Number of customers: {len(cluster_data)}")
+    print(f"Average Income: ${cluster_data['Income'].mean():.2f}")
+    print(f"Average Age: {cluster_data['Age'].mean():.1f} years")
+    print(f"Average Spent: ${cluster_data['Spent'].mean():.2f}")
+    print(f"Average Recency: {cluster_data['Recency'].mean():.1f} days")
+    print(f"% Parents: {(cluster_data['Is_Parent'].sum() / len(cluster_data) * 100):.1f}%")
+    print(f"Average Family Size: {cluster_data['Family_Size'].mean():.2f}")
+
+# Create comparison visualizations
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+fig.suptitle('Cluster Comparison Across Key Metrics', fontsize=16, fontweight='bold')
+
+pal = ["#682F2F", "#B9C0C9", "#9F8A78", "#F3AB60"]
+
+# Income by Cluster
+sns.boxplot(data=dataf_clean, x="Clusters", y="Income", palette=pal, ax=axes[0, 0])
+axes[0, 0].set_title('Income Distribution by Cluster')
+
+# Age by Cluster
+sns.boxplot(data=dataf_clean, x="Clusters", y="Age", palette=pal, ax=axes[0, 1])
+axes[0, 1].set_title('Age Distribution by Cluster')
+
+# Spent by Cluster
+sns.boxplot(data=dataf_clean, x="Clusters", y="Spent", palette=pal, ax=axes[0, 2])
+axes[0, 2].set_title('Total Spending by Cluster')
+
+# Recency by Cluster
+sns.boxplot(data=dataf_clean, x="Clusters", y="Recency", palette=pal, ax=axes[1, 0])
+axes[1, 0].set_title('Recency by Cluster')
+
+# Family Size by Cluster
+sns.boxplot(data=dataf_clean, x="Clusters", y="Family_Size", palette=pal, ax=axes[1, 1])
+axes[1, 1].set_title('Family Size by Cluster')
+
+# Is_Parent distribution
+cluster_parent = dataf_clean.groupby(['Clusters', 'Is_Parent']).size().unstack(fill_value=0)
+cluster_parent.plot(kind='bar', stacked=True, ax=axes[1, 2], color=['#B9C0C9', '#682F2F'])
+axes[1, 2].set_title('Parent Status by Cluster')
+axes[1, 2].set_xlabel('Cluster')
+axes[1, 2].set_ylabel('Count')
+axes[1, 2].legend(['Not Parent', 'Parent'])
+
+plt.tight_layout()
+plt.show()
+
+# Product preferences by cluster
+print("\n3. Product Category Spending by Cluster:")
+product_cols = ['Drinks', 'Fruits', 'Vegetables', 'Meat', 'Fish', 'Sweets', 'Electro']
+cluster_products = dataf_clean.groupby('Clusters')[product_cols].mean()
+print(cluster_products.round(2))
+
+# Visualize product preferences
+fig, ax = plt.subplots(figsize=(12, 6))
+cluster_products.T.plot(kind='bar', ax=ax, color=pal)
+ax.set_title('Average Spending on Product Categories by Cluster', fontsize=14, fontweight='bold')
+ax.set_xlabel('Product Category')
+ax.set_ylabel('Average Spending ($)')
+ax.legend(title='Cluster', labels=[f'Cluster {i}' for i in range(4)])
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+print("\n" + "="*60)
+print("Analysis Complete!")
+print("="*60)
